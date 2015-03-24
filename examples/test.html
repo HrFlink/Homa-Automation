@@ -1,0 +1,32 @@
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="style.css"> <!--  linking style.css to this page -->
+</head>
+
+<body>
+
+	<div id="title" > <a href="index.html"> <h1>Impact analysis</h1> </a>
+	</div>
+	<div id="editmenu" style="width:450px; float:left" ><br>
+		<br>
+		<form action='analysis.php' method="GET">
+			<h3>Type a router name: (nqu/nqe) <input type="text" name="router" size="13"></h3>
+			<h3>Type a inteface name:<input type="text" name="interface" size="10">
+			<input type="submit" name="ri" value="count"> </input></h3>
+		Interface name is optional and may contain only part of name to search on FPC's etc.
+		</form> <br>
+		or
+		<form action='analysis.php' method="GET">
+			<h3>Type a switch name: (nqz) <input type="text" name="switchname" size="10">
+			<input type="submit" name="switch" value="count"> </input></h3>
+		</form> <br>
+		or
+		<form action='analysis.php' method="GET">
+			<h3>Type a dslam name: (xdd/xda) <input type="text" name="dslamname" size="10">
+			<input type="submit" name="dslam" value="count"> </input></h3>
+		</form>
+		<br>
+	</div>
+
+
+<body>
