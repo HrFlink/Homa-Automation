@@ -33,9 +33,12 @@
 #include <termios.h>  // POSIX terminal control definitions 
 #include <sys/ioctl.h>
 
-#include "arduino-serial-lib.h"
+#define DEBUG
 
-// #define DEBUG
+#define TEXTSIZE 16
+#define MESSAGESIZE 18
+
+#include "arduino-serial-lib.h"
 
 void print_binary(char c){
 	int i;
@@ -47,8 +50,9 @@ void print_binary(char c){
 }
 
 void print_usage(char* application_name){
-  fprintf(stderr, "Usage: %s [-r Red] [-g Green] [-b Blue]\n");
+  fprintf(stderr, "Usage: %s [-r Row] [-c Column] [-t Text]\n");
   fprintf(stderr, "Unused options will be set to zero\n");
+  fprintf(stderr, "If no text, the line will be cleared\n");
   exit(1);
 }
 
@@ -69,10 +73,10 @@ int findserialport(char* dest){
 
 int main(int argc, char** argv){
 
+    int row = 0;
+    int col = 0;
+    char text[TEXTSIZE] = "";
     int opt;
-    int colorR = 0;
-    int colorG = 0;
-    int colorB = 0;
        
     const int buf_max = 256;
 
@@ -88,31 +92,26 @@ int main(int argc, char** argv){
     char buf[buf_max];
     int rc,n;
     int target = 0;
-    
-    while ((opt = getopt(argc, argv, "r:g:b:")) != -1) {
+
+    while ((opt = getopt(argc, argv, "r:c:t:")) != -1) {
 	int tmp = 0;
         switch (opt) {
         case 'r':
-
 	    sscanf(optarg, "%d", &tmp);
-	    if ((tmp >= 0) && (tmp < 256 ))
-		 colorR = tmp;
+	    if ((tmp >= 0) && (tmp < 2 ))
+		 row = tmp;
 	    else
-		printf("Red out of range\n");
+		printf("Row out of range - set to zero\n");
 	    break;
-        case 'g':
+        case 'c':
             sscanf(optarg, "%d", &tmp);
-            if ((tmp >= 0) && (tmp < 256 ))
-                 colorG = tmp;
+            if ((tmp >= 0) && (tmp < 16 ))
+                 col = tmp;
             else
-                printf("Green out of range\n");
+                printf("Colomn out of range - set to zero\n");
             break;
-        case 'b':
-            sscanf(optarg, "%d", &tmp);
-            if ((tmp >= 0) && (tmp < 256 ))
-                 colorB = tmp;
-            else
-                printf("Blue out of range\n");
+        case 't':
+	    sscanf(optarg, "%16[0-9:a-zA-Z ]", &text);
             break;
       default: /* '?' */
 	    printf("argument %c unknown\n",opt);
@@ -129,36 +128,37 @@ int main(int argc, char** argv){
 		findserialport(serialport);
 	}
 
-	char payload[3] = {0, 0, 0}; 
+	int i, j, actual_message_size;
+	char payload[MESSAGESIZE] = {0, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32}; 
+	actual_message_size = strlen(text);
+	for (i = 0; i < TEXTSIZE ; i++) {
+		if (i < actual_message_size) 
+			payload[i+2] = text[i];
+	} 
 
 
-	int i, j;
 
-	uint8_t message[6];
-	int message_size = 6;
+	uint8_t message[MESSAGESIZE*2];
 
 	
 	/*******************************************
 	 *  Modification of the payload template  *
 	 *******************************************/
 	
-	payload[0]=colorR;
-	payload[1]=colorG;
-	payload[2]=colorB;
+	payload[0]=row;
+	payload[1]=col;
 
 	// payload transmission
-#ifdef DEBUG
-	
+#ifdef DEBUG	
 	printf("payload = \n");
-	for (i = 0 ; i < 3 ; i++){
+	for (i = 0 ; i < MESSAGESIZE ; i++){
 	  print_binary(payload[i]);
 	  printf(" ");
 	}
-
 #endif
 
   // turning binary payload into ASCII characters (HEX representation)
-  for (i = 0, j = 0 ; i < 6 ; i+=2, j++){
+  for (i = 0, j = 0 ; i < MESSAGESIZE*2 ; i+=2, j++){
   	message[i] = (payload[j] & 0xF0) >> 4;
   	if (message[i] < 10){
   	  message[i] += '0'; // ASCII
@@ -177,17 +177,14 @@ int main(int argc, char** argv){
 //	printf("\nPreparing to send...\n");
 	fd = serialport_init(serialport, baudrate);
 	if( fd==-1 ){ 
-    error("couldn't open port");
-    return -1;
+	error("couldn't open port");
+	return -1;
   }
 //	printf("opened port %s\n",serialport);
 	serialport_flush(fd);
-  rc = serialport_writebyte(fd, 'C');
-  for ( i = 0 ; i < 6 ; i++ ) {
-      int n = serialport_writebyte(fd, message[i]);
-
-  }
-//  printf("Done\n");
+        rc = serialport_writebyte(fd, 'T');
+        rc = serialport_write(fd, message);
+//	printf("Done\n");
 	
   serialport_read_until(fd, buf, '\n', buf_max, timeout);
   printf("%s\n",buf); // should be "OK" but could be an error message

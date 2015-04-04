@@ -33,6 +33,7 @@ int serialport_init(const char* serialport, int baud)
         perror("serialport_init: Unable to open port ");
         return -1;
     }
+
     
     //int iflags = TIOCM_DTR;
     //ioctl(fd, TIOCMBIS, &iflags);     // turn on DTR
@@ -68,7 +69,7 @@ int serialport_init(const char* serialport, int baud)
     // no flow control
     toptions.c_cflag &= ~CRTSCTS;
 
-    //toptions.c_cflag &= ~HUPCL; // disable hang-up-on-close to avoid reset
+    toptions.c_cflag &= ~HUPCL; // disable hang-up-on-close to avoid reset
 
     toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
     toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl

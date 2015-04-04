@@ -1,0 +1,4 @@
+cc arduino-serial-lib.c sendACCom.c -o sendACCom
+cc arduino-serial-lib.c sendColor.c -o sendColor
+cc arduino-serial-lib.c sendText.c -o sendText
+cc arduino-serial-lib.c readSensor.c -o readSensor

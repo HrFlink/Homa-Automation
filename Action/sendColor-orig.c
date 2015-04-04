@@ -35,8 +35,6 @@
 
 #include "arduino-serial-lib.h"
 
-// #define DEBUG
-
 void print_binary(char c){
 	int i;
 	//printf("%d in binary = ",c);
@@ -51,6 +49,40 @@ void print_usage(char* application_name){
   fprintf(stderr, "Unused options will be set to zero\n");
   exit(1);
 }
+
+/*
+int serialport_read_until(int fd, char* buf, char until, int buf_max, int timeout)
+{
+    char b[1];  // read expects an array, so we give it a 1-byte array
+    int i=0;
+    do { 
+        int n = read(fd, b, 1);  // read a char at a time
+        if( n==-1) return -1;    // couldn't read
+		if( n==0 ) {
+            usleep( 1 * 1000 );  // wait 1 msec try again
+            timeout--;
+            continue;
+        }
+#ifdef SERIALPORTDEBUG  
+        printf("serialport_read_until: i=%d, n=%d b='%c'\n",i,n,b[0]); // debug
+#endif
+        buf[i] = b[0]; 
+        i++;
+    } while( b[0] != until && i < buf_max && timeout>0 );
+
+    buf[i] = 0;  // null terminate the string
+    return 0;
+}
+*/
+
+/*
+int serialport_flush(int fd)
+{
+    //sleep(2); //required to make flush work, for some reason
+    return tcflush(fd, TCIOFLUSH);
+}
+*/
+
 
 int findserialport(char* dest){
     int i;
@@ -147,15 +179,12 @@ int main(int argc, char** argv){
 	payload[2]=colorB;
 
 	// payload transmission
-#ifdef DEBUG
 	
 	printf("payload = \n");
 	for (i = 0 ; i < 3 ; i++){
 	  print_binary(payload[i]);
 	  printf(" ");
 	}
-
-#endif
 
   // turning binary payload into ASCII characters (HEX representation)
   for (i = 0, j = 0 ; i < 6 ; i+=2, j++){
@@ -171,25 +200,25 @@ int main(int argc, char** argv){
   	} else {
   	  message[i+1] += 'A' - 10;
   	}
-//  	printf("0x%c%c ",message[i], message[i+1]);
+  	printf("0x%c%c ",message[i], message[i+1]);
   }
-//	printf("\n");
-//	printf("\nPreparing to send...\n");
+  printf("\n");
+	printf("\nPreparing to send...\n");
 	fd = serialport_init(serialport, baudrate);
 	if( fd==-1 ){ 
     error("couldn't open port");
     return -1;
   }
-//	printf("opened port %s\n",serialport);
+	printf("opened port %s\n",serialport);
 	serialport_flush(fd);
   rc = serialport_writebyte(fd, 'C');
   for ( i = 0 ; i < 6 ; i++ ) {
       int n = serialport_writebyte(fd, message[i]);
 
   }
-//  printf("Done\n");
+  printf("Done\n");
 	
   serialport_read_until(fd, buf, '\n', buf_max, timeout);
-  printf("%s\n",buf); // should be "OK" but could be an error message
+  printf("response: %s\n",buf); // should be "OK" but could be an error message
   return 0;
 }
